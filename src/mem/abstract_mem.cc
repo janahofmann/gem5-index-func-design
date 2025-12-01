@@ -39,13 +39,12 @@
  */
 
 #include "mem/abstract_mem.hh"
-
 #include <vector>
-
 #include "base/loader/memory_image.hh"
 #include "base/loader/object_file.hh"
 #include "cpu/thread_context.hh"
 #include "debug/LLSC.hh"
+#include "debug/AddressTrace.hh"
 #include "debug/MemoryAccess.hh"
 #include "mem/packet_access.hh"
 #include "sim/system.hh"
@@ -355,7 +354,15 @@ AbstractMemory::checkLockedAddrList(PacketPtr pkt)
 static inline void
 tracePacket(System *sys, const char *label, PacketPtr pkt)
 {
+    if (! (pkt->req->isInstFetch()
+        || sys->getRequestorName(pkt->req-> requestorId()) == "functional")) {
+        DPRINTF(AddressTrace, "Accessing address %#x from %s | Command: %s\n",
+            pkt->getAddr(), sys->getRequestorName(pkt->req-> requestorId()),
+            pkt->cmd.toString());
+    }
+
     int size = pkt->getSize();
+
     if (size == 1 || size == 2 || size == 4 || size == 8) {
         ByteOrder byte_order = sys->getGuestByteOrder();
         DPRINTF(MemoryAccess, "%s from %s of size %i on address %#x data "
